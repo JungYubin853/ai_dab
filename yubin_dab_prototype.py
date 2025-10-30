@@ -263,12 +263,21 @@ class DotsAndBoxes:
 
         self.info.config(text=msg)
 
-    # ---------------- MINIMAX (with extra-turn rule) ----------------
+    # ===== minimax =====
     @lru_cache(maxsize=None)
-    def minimax(self, edges, boxes, player):
-        """Pure minimax, no depth, no alpha-beta, but supports extra turns."""
+    def minimax(self, edges, boxes, player, depth=None):
+        """
+        Minimax with optional depth limit.
+        Returns (score_from_AI_pov, best_move).
+        """
         # terminal
         if all(e != 0 for e in edges):
+            ai_score = sum(1 for b in boxes if b == AI)
+            human_score = sum(1 for b in boxes if b == HUMAN)
+            return ai_score - human_score, None
+
+        # depth cutoff -> heuristic: difference in boxes
+        if depth is not None and depth <= 0:
             ai_score = sum(1 for b in boxes if b == AI)
             human_score = sum(1 for b in boxes if b == HUMAN)
             return ai_score - human_score, None
@@ -276,49 +285,65 @@ class DotsAndBoxes:
         moves = [i for i, e in enumerate(edges) if e == 0]
 
         if player == AI:
-            best_val = -999
-            best_move = None
+            best_val, best_move = -999, None
             for m in moves:
-                e2 = list(edges)
-                b2 = list(boxes)
-                e2[m] = AI
-                # check if this move closed any boxes
-                gained = False
-                for bi, (t, b, l, r) in enumerate(BOXES):
-                    if e2[t] and e2[b] and e2[l] and e2[r] and b2[bi] == 0:
-                        b2[bi] = AI
-                        gained = True
-                # if gained -> AI plays again, else -> human
-                next_player = AI if gained else HUMAN
-                val, _ = self.minimax(tuple(e2), tuple(b2), next_player)
-                if val > best_val:
-                    best_val = val
-                    best_move = m
+                val = self._simulate_move(edges, boxes, m, AI, depth)
+                if val[0] > best_val:
+                    best_val, best_move = val[0], m
             return best_val, best_move
         else:
-            # HUMAN turn: minimizing AI score
-            best_val = 999
-            best_move = None
+            best_val, best_move = 999, None
             for m in moves:
-                e2 = list(edges)
-                b2 = list(boxes)
-                e2[m] = HUMAN
-                gained = False
-                for bi, (t, b, l, r) in enumerate(BOXES):
-                    if e2[t] and e2[b] and e2[l] and e2[r] and b2[bi] == 0:
-                        b2[bi] = HUMAN
-                        gained = True
-                next_player = HUMAN if gained else AI
-                val, _ = self.minimax(tuple(e2), tuple(b2), next_player)
-                if val < best_val:
-                    best_val = val
-                    best_move = m
+                val = self._simulate_move(edges, boxes, m, HUMAN, depth)
+                if val[0] < best_val:
+                    best_val, best_move = val[0], m
             return best_val, best_move
+
+    def _simulate_move(self, edges, boxes, move, player, depth):
+        """Helper for minimax: apply move on copies and recurse."""
+        e2 = list(edges)
+        b2 = list(boxes)
+        e2[move] = player
+
+        gained = False
+        for bi, (t, b, l, r) in enumerate(BOXES):
+            if e2[t] and e2[b] and e2[l] and e2[r] and b2[bi] == 0:
+                b2[bi] = player
+                gained = True
+
+        next_player = player if gained else (AI if player == HUMAN else HUMAN)
+        next_depth = None if depth is None else depth - 1
+        return self.minimax(tuple(e2), tuple(b2), next_player, next_depth)
+
 
 def main():
     root = tk.Tk()
-    game = DotsAndBoxes(root)
+    root.title("Dots and Boxes")
+
+    launcher = tk.Frame(root)
+    launcher.pack(padx=60, pady=60)
+    tk.Label(launcher, text="Choose mode:", font=(None, 14)).pack(pady=(0, 10))
+
+    def show_launcher():
+        launcher.pack(padx=60, pady=60)
+        root.title("Dots and Boxes")
+
+    def start_game(size):
+        configure_grid(size)
+        try:
+            DotsAndBoxes.minimax.cache_clear()
+        except Exception:
+            pass
+        launcher.pack_forget()
+        root.title(f"Dots and Boxes {GRID_SIZE}x{GRID_SIZE}")
+        DotsAndBoxes(root, on_back=show_launcher)
+
+    tk.Button(launcher, text="Easy (3x3)", width=20, command=lambda: start_game(3)).pack(pady=5)
+    tk.Button(launcher, text="Hard (4x4)", width=20, command=lambda: start_game(4)).pack(pady=5)
+    tk.Button(launcher, text="Quit", width=20, command=root.destroy).pack(pady=(12, 0))
+
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

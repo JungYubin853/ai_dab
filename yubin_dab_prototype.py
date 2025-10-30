@@ -2,109 +2,129 @@ import tkinter as tk
 from functools import lru_cache
 import threading
 
-GRID_SIZE = 3  # 4x4 dots = 9 boxes
+# ----- constants -----
+HUMAN, AI = 1, 2
 EDGE_EMPTY = "gray"
 HUMAN_COLOR = "green"
 AI_COLOR = "red"
 
-HUMAN = 1
-AI = 2
+# these will be overwritten by configure_grid()
+GRID_SIZE = 4
+NUM_H_EDGES = NUM_V_EDGES = TOTAL_EDGES = 0
+BOXES = []   # list of (top, bottom, left, right) edge-index tuples
 
-# Build box-edge mapping (computed from GRID_SIZE)
-NUM_H_EDGES = GRID_SIZE * (GRID_SIZE - 1)
-NUM_V_EDGES = (GRID_SIZE - 1) * GRID_SIZE
-TOTAL_EDGES = NUM_H_EDGES + NUM_V_EDGES
 
-BOXES = []
-for br in range(GRID_SIZE - 1):
-    for bc in range(GRID_SIZE - 1):
-        top = br * (GRID_SIZE - 1) + bc
-        bottom = (br + 1) * (GRID_SIZE - 1) + bc
-        # vertical edges start after all horizontal edges
-        left = NUM_H_EDGES + br * GRID_SIZE + bc
-        right = NUM_H_EDGES + br * GRID_SIZE + (bc + 1)
-        BOXES.append((top, bottom, left, right))
-# (GRID_SIZE-1)^2 boxes total
+def configure_grid(size: int):
+    """
+    Rebuilds all grid-dependent globals for a given size.
+    Called at startup and whenever the user picks a new mode.
+    """
+    global GRID_SIZE, NUM_H_EDGES, NUM_V_EDGES, TOTAL_EDGES, BOXES
+    GRID_SIZE = size
+    NUM_H_EDGES = GRID_SIZE * (GRID_SIZE - 1)              # rows of horizontal edges
+    NUM_V_EDGES = (GRID_SIZE - 1) * GRID_SIZE              # columns of vertical edges
+    TOTAL_EDGES = NUM_H_EDGES + NUM_V_EDGES
+
+    # build box -> 4 edges mapping once
+    BOXES = []
+    for r in range(GRID_SIZE - 1):
+        for c in range(GRID_SIZE - 1):
+            top = r * (GRID_SIZE - 1) + c
+            bottom = (r + 1) * (GRID_SIZE - 1) + c
+            left = NUM_H_EDGES + r * GRID_SIZE + c
+            right = NUM_H_EDGES + r * GRID_SIZE + (c + 1)
+            BOXES.append((top, bottom, left, right))
+
+
+# initialize with default size
+configure_grid(GRID_SIZE)
+
 
 class DotsAndBoxes:
-    def __init__(self, root):
+    def __init__(self, root, on_back=None):
         self.root = root
+        self.on_back = on_back
         self.root.title(f"Dots and Boxes {GRID_SIZE}x{GRID_SIZE} (Human vs AI)")
 
+        # UI
         self.canvas = tk.Canvas(root, width=500, height=500, bg="white")
         self.canvas.pack()
+        self.info = tk.Label(root, text="Your turn (Green)")
+        self.info.pack()
+        self.controls = tk.Frame(root)
+        self.controls.pack(pady=6)
+        tk.Button(self.controls, text="New Game", command=self.reset_game).pack(side=tk.LEFT, padx=6)
+        tk.Button(self.controls, text="Back to Menu", command=self._on_back).pack(side=tk.LEFT, padx=6)
 
+        # display settings
         self.spacing = 120
         self.margin = 60
 
-        # game state (sizes depend on GRID_SIZE)
-        self.edge_state = [0] * TOTAL_EDGES    # 0 empty, 1 human, 2 ai
-        self.box_owner = [0] * ((GRID_SIZE - 1) * (GRID_SIZE - 1))  # 0 none, 1 human, 2 ai
-        self.current_player = HUMAN   # human starts
+        # game state
+        self.edge_state = [0] * TOTAL_EDGES      # 0 empty, 1 human, 2 ai
+        self.box_owner = [0] * ((GRID_SIZE - 1) * (GRID_SIZE - 1))
+        self.current_player = HUMAN
 
+        # draw and bind
         self.draw_board()
         self.canvas.bind("<Button-1>", self.handle_click)
 
-        self.info = tk.Label(root, text="Your turn (Green)")
-        self.info.pack()
-
-    # ---------------- UI DRAWING ----------------
+    # ===== drawing =====
     def get_edge_coords(self):
-        h_edges = []
-        v_edges = []
-        # horizontal
+        """Returns (horizontal_edges, vertical_edges) lists of line coords."""
+        h_edges, v_edges = [], []
+
+        # horizontal edges
         for r in range(GRID_SIZE):
+            y = self.margin + r * self.spacing
             for c in range(GRID_SIZE - 1):
                 x1 = self.margin + c * self.spacing
-                y1 = self.margin + r * self.spacing
-                x2 = self.margin + (c + 1) * self.spacing
-                y2 = y1
-                h_edges.append((x1, y1, x2, y2))
-        # vertical
+                x2 = x1 + self.spacing
+                h_edges.append((x1, y, x2, y))
+
+        # vertical edges
         for r in range(GRID_SIZE - 1):
             for c in range(GRID_SIZE):
-                x1 = self.margin + c * self.spacing
+                x = self.margin + c * self.spacing
                 y1 = self.margin + r * self.spacing
-                x2 = x1
-                y2 = self.margin + (r + 1) * self.spacing
-                v_edges.append((x1, y1, x2, y2))
+                y2 = y1 + self.spacing
+                v_edges.append((x, y1, x, y2))
+
         return h_edges, v_edges
 
     def draw_board(self):
         self.canvas.delete("all")
         h_edges, v_edges = self.get_edge_coords()
 
-        # boxes
-        for i, box in enumerate(BOXES):
-            owner = self.box_owner[i]
+        # draw boxes
+        for i, owner in enumerate(self.box_owner):
+            br, bc = divmod(i, GRID_SIZE - 1)
+            x = self.margin + bc * self.spacing
+            y = self.margin + br * self.spacing
+            color = "#dddddd"
             if owner == HUMAN:
                 color = HUMAN_COLOR
             elif owner == AI:
                 color = AI_COLOR
-            else:
-                color = "#dddddd"
-            br = i // (GRID_SIZE - 1)
-            bc = i % (GRID_SIZE - 1)
-            x = self.margin + bc * self.spacing
-            y = self.margin + br * self.spacing
             self.canvas.create_rectangle(
                 x + 10, y + 10,
                 x + self.spacing - 10, y + self.spacing - 10,
                 fill=color, outline=color
             )
 
-        # edges
+        # draw edges
         for i, (x1, y1, x2, y2) in enumerate(h_edges):
             owner = self.edge_state[i]
             color = EDGE_EMPTY if owner == 0 else (HUMAN_COLOR if owner == HUMAN else AI_COLOR)
             self.canvas.create_line(x1, y1, x2, y2, fill=color, width=5)
+
         for j, (x1, y1, x2, y2) in enumerate(v_edges):
             idx = NUM_H_EDGES + j
             owner = self.edge_state[idx]
             color = EDGE_EMPTY if owner == 0 else (HUMAN_COLOR if owner == HUMAN else AI_COLOR)
             self.canvas.create_line(x1, y1, x2, y2, fill=color, width=5)
 
-        # dots
+        # draw dots
         for r in range(GRID_SIZE):
             for c in range(GRID_SIZE):
                 x = self.margin + c * self.spacing
@@ -112,19 +132,23 @@ class DotsAndBoxes:
                 self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="black")
 
     def edge_at(self, x, y):
+        """Returns edge index near given point or None."""
         h_edges, v_edges = self.get_edge_coords()
-        # horizontal
+
+        # check horizontals
         for i, (x1, y1, x2, y2) in enumerate(h_edges):
-            if abs(y - y1) <= 10 and min(x1, x2) - 10 <= x <= max(x1, x2) + 10:
+            if abs(y - y1) <= 10 and x1 - 10 <= x <= x2 + 10:
                 return i
-        # vertical
+
+        # check verticals
         for j, (x1, y1, x2, y2) in enumerate(v_edges):
             idx = NUM_H_EDGES + j
-            if abs(x - x1) <= 10 and min(y1, y2) - 10 <= y <= max(y1, y2) + 10:
+            if abs(x - x1) <= 10 and y1 - 10 <= y <= y2 + 10:
                 return idx
+
         return None
 
-    # ---------------- GAME LOGIC ----------------
+    # ===== game logic =====
     def handle_click(self, event):
         if self.current_player != HUMAN:
             return
@@ -132,26 +156,26 @@ class DotsAndBoxes:
         if idx is None or self.edge_state[idx] != 0:
             return
 
-        # Human plays
         gained = self.apply_move(idx, HUMAN)
         self.draw_board()
         self.update_info()
 
-        # If human did NOT complete a box, AI's turn
         if not gained and not self.is_game_over():
             self.current_player = AI
-            self.root.after(80, self.ai_move)
+            self.root.after(80, self.ai_move)  # AI turn
         else:
-            # human gets another move
             self.current_player = HUMAN
 
-    def apply_move(self, move_idx, player):
-        """Apply move to real board. Return True if this move completed at least 1 new box."""
-        self.edge_state[move_idx] = player
+    def apply_move(self, edge_idx, player):
+        """
+        Marks the edge, assigns any newly completed boxes,
+        returns True if at least one box was completed.
+        """
+        self.edge_state[edge_idx] = player
         gained = False
         for bi, (t, b, l, r) in enumerate(BOXES):
-            if (self.edge_state[t] != 0 and self.edge_state[b] != 0 and
-                self.edge_state[l] != 0 and self.edge_state[r] != 0 and
+            if (self.edge_state[t] and self.edge_state[b] and
+                self.edge_state[l] and self.edge_state[r] and
                 self.box_owner[bi] == 0):
                 self.box_owner[bi] = player
                 gained = True
@@ -160,73 +184,84 @@ class DotsAndBoxes:
     def is_game_over(self):
         return all(e != 0 for e in self.edge_state)
 
+    # ===== AI =====
     def ai_move(self):
-        """AI makes exactly 1 move, but if it gained a box, it moves again.
-
-        The minimax search can be expensive for larger GRID_SIZE. Run the
-        computation in a background thread and apply the move back on the
-        main/UI thread to avoid freezing the Tk event loop.
-        """
+        """Run minimax in a background thread, then apply the chosen move."""
         if self.is_game_over():
             self.update_info()
             return
 
-        # show thinking state
         self.info.config(text="AI thinking...")
 
-        # Capture current state copies for the worker to use
-        edges_snapshot = tuple(self.edge_state)
-        boxes_snapshot = tuple(self.box_owner)
+        edges = tuple(self.edge_state)
+        boxes = tuple(self.box_owner)
+        depth_limit = None if GRID_SIZE <= 3 else 6  # small boards -> full search
 
-        def worker(edges, boxes):
-            # run minimax (may take time)
+        def worker(e, b):
             try:
-                _, move = self.minimax(edges, boxes, AI)
-            except Exception as e:
-                # schedule error display on main thread
-                self.root.after(0, lambda: self.info.config(text=f"AI error: {e}"))
+                _, move = self.minimax(e, b, AI, depth_limit)
+            except Exception as err:
+                self.root.after(0, lambda: self.info.config(text=f"AI error: {err}"))
                 return
-            # apply result on main thread
             self.root.after(0, lambda: self._apply_ai_move(move))
 
-        t = threading.Thread(target=worker, args=(edges_snapshot, boxes_snapshot), daemon=True)
-        t.start()
+        threading.Thread(target=worker, args=(edges, boxes), daemon=True).start()
 
     def _apply_ai_move(self, move):
-        """Apply AI move on the main thread (called via root.after)."""
-        if move is not None:
-            gained = self.apply_move(move, AI)
-            self.draw_board()
-            self.update_info()
-
-            if gained and not self.is_game_over():
-                # AI gets another turn
-                self.current_player = AI
-                # small delay before next AI computation
-                self.root.after(80, self.ai_move)
-            else:
-                # pass to human
-                self.current_player = HUMAN
-        else:
-            # no moves
+        if move is None:
             self.current_player = HUMAN
             self.update_info()
+            return
+
+        gained = self.apply_move(move, AI)
+        self.draw_board()
+        self.update_info()
+
+        if gained and not self.is_game_over():
+            self.current_player = AI
+            self.root.after(80, self.ai_move)
+        else:
+            self.current_player = HUMAN
+
+    def reset_game(self):
+        """Reset current board with same grid size."""
+        try:
+            DotsAndBoxes.minimax.cache_clear()
+        except Exception:
+            pass
+
+        self.edge_state = [0] * TOTAL_EDGES
+        self.box_owner = [0] * ((GRID_SIZE - 1) * (GRID_SIZE - 1))
+        self.current_player = HUMAN
+        self.draw_board()
+        self.update_info()
+
+    def _on_back(self):
+        """Destroy widgets and go back to launcher."""
+        for w in (self.canvas, self.info, self.controls):
+            try:
+                w.destroy()
+            except Exception:
+                pass
+        if callable(self.on_back):
+            self.on_back()
 
     def update_info(self):
+        human_score = sum(1 for b in self.box_owner if b == HUMAN)
+        ai_score = sum(1 for b in self.box_owner if b == AI)
+
         if self.is_game_over():
-            h = sum(1 for b in self.box_owner if b == HUMAN)
-            a = sum(1 for b in self.box_owner if b == AI)
-            if h > a:
-                self.info.config(text=f"Game Over! You win! ({h}:{a})")
-            elif a > h:
-                self.info.config(text=f"Game Over! AI wins! ({h}:{a})")
+            if human_score > ai_score:
+                msg = f"Game Over! You win! ({human_score}:{ai_score})"
+            elif ai_score > human_score:
+                msg = f"Game Over! AI wins! ({human_score}:{ai_score})"
             else:
-                self.info.config(text=f"Game Over! Draw! ({h}:{a})")
+                msg = f"Game Over! Draw! ({human_score}:{ai_score})"
         else:
-            h = sum(1 for b in self.box_owner if b == HUMAN)
-            a = sum(1 for b in self.box_owner if b == AI)
             turn = "Your turn (Green)" if self.current_player == HUMAN else "AI thinking..."
-            self.info.config(text=f"{turn} | H:{h} A:{a}")
+            msg = f"{turn} | H:{human_score} A:{ai_score}"
+
+        self.info.config(text=msg)
 
     # ---------------- MINIMAX (with extra-turn rule) ----------------
     @lru_cache(maxsize=None)

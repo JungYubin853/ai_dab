@@ -123,7 +123,110 @@ class DotsAndBoxes:
             if abs(x - x1) <= 10 and min(y1, y2) - 10 <= y <= max(y1, y2) + 10:
                 return idx
         return None
+    # ---------------- GAME LOGIC ----------------
+    def handle_click(self, event):
+        if self.current_player != HUMAN:
+            return
+        idx = self.edge_at(event.x, event.y)
+        if idx is None or self.edge_state[idx] != 0:
+            return
 
+        # Human plays
+        gained = self.apply_move(idx, HUMAN)
+        self.draw_board()
+        self.update_info()
+
+        # If human did NOT complete a box, AI's turn
+        if not gained and not self.is_game_over():
+            self.current_player = AI
+            self.root.after(80, self.ai_move)
+        else:
+            # human gets another move
+            self.current_player = HUMAN
+
+    def apply_move(self, move_idx, player):
+        """Apply move to real board. Return True if this move completed at least 1 new box."""
+        self.edge_state[move_idx] = player
+        gained = False
+        for bi, (t, b, l, r) in enumerate(BOXES):
+            if (self.edge_state[t] != 0 and self.edge_state[b] != 0 and
+                self.edge_state[l] != 0 and self.edge_state[r] != 0 and
+                self.box_owner[bi] == 0):
+                self.box_owner[bi] = player
+                gained = True
+        return gained
+
+    def is_game_over(self):
+        return all(e != 0 for e in self.edge_state)
+
+    def ai_move(self):
+        """AI makes exactly 1 move, but if it gained a box, it moves again.
+
+        The minimax search can be expensive for larger GRID_SIZE. Run the
+        computation in a background thread and apply the move back on the
+        main/UI thread to avoid freezing the Tk event loop.
+        """
+        if self.is_game_over():
+            self.update_info()
+            return
+
+        # show thinking state
+        self.info.config(text="AI thinking...")
+
+        # Capture current state copies for the worker to use
+        edges_snapshot = tuple(self.edge_state)
+        boxes_snapshot = tuple(self.box_owner)
+
+        def worker(edges, boxes):
+            # run minimax (may take time)
+            try:
+                _, move = self.minimax(edges, boxes, AI)
+            except Exception as e:
+                # schedule error display on main thread
+                self.root.after(0, lambda: self.info.config(text=f"AI error: {e}"))
+                return
+            # apply result on main thread
+            self.root.after(0, lambda: self._apply_ai_move(move))
+
+        t = threading.Thread(target=worker, args=(edges_snapshot, boxes_snapshot), daemon=True)
+        t.start()
+
+    def _apply_ai_move(self, move):
+        """Apply AI move on the main thread (called via root.after)."""
+        if move is not None:
+            gained = self.apply_move(move, AI)
+            self.draw_board()
+            self.update_info()
+
+            if gained and not self.is_game_over():
+                # AI gets another turn
+                self.current_player = AI
+                # small delay before next AI computation
+                self.root.after(80, self.ai_move)
+            else:
+                # pass to human
+                self.current_player = HUMAN
+        else:
+            # no moves
+            self.current_player = HUMAN
+            self.update_info()
+
+    def update_info(self):
+        if self.is_game_over():
+            h = sum(1 for b in self.box_owner if b == HUMAN)
+            a = sum(1 for b in self.box_owner if b == AI)
+            if h > a:
+                self.info.config(text=f"Game Over! You win! ({h}:{a})")
+            elif a > h:
+                self.info.config(text=f"Game Over! AI wins! ({h}:{a})")
+            else:
+                self.info.config(text=f"Game Over! Draw! ({h}:{a})")
+        else:
+            h = sum(1 for b in self.box_owner if b == HUMAN)
+            a = sum(1 for b in self.box_owner if b == AI)
+            turn = "Your turn (Green)" if self.current_player == HUMAN else "AI thinking..."
+            self.info.config(text=f"{turn} | H:{h} A:{a}")
+            
 def main():
     root = tk.Tk()
     game = DotsAndBoxes(root)

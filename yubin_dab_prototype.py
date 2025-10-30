@@ -123,6 +123,7 @@ class DotsAndBoxes:
             if abs(x - x1) <= 10 and min(y1, y2) - 10 <= y <= max(y1, y2) + 10:
                 return idx
         return None
+
     # ---------------- GAME LOGIC ----------------
     def handle_click(self, event):
         if self.current_player != HUMAN:
@@ -226,7 +227,59 @@ class DotsAndBoxes:
             a = sum(1 for b in self.box_owner if b == AI)
             turn = "Your turn (Green)" if self.current_player == HUMAN else "AI thinking..."
             self.info.config(text=f"{turn} | H:{h} A:{a}")
-            
+
+    # ---------------- MINIMAX (with extra-turn rule) ----------------
+    @lru_cache(maxsize=None)
+    def minimax(self, edges, boxes, player):
+        """Pure minimax, no depth, no alpha-beta, but supports extra turns."""
+        # terminal
+        if all(e != 0 for e in edges):
+            ai_score = sum(1 for b in boxes if b == AI)
+            human_score = sum(1 for b in boxes if b == HUMAN)
+            return ai_score - human_score, None
+
+        moves = [i for i, e in enumerate(edges) if e == 0]
+
+        if player == AI:
+            best_val = -999
+            best_move = None
+            for m in moves:
+                e2 = list(edges)
+                b2 = list(boxes)
+                e2[m] = AI
+                # check if this move closed any boxes
+                gained = False
+                for bi, (t, b, l, r) in enumerate(BOXES):
+                    if e2[t] and e2[b] and e2[l] and e2[r] and b2[bi] == 0:
+                        b2[bi] = AI
+                        gained = True
+                # if gained -> AI plays again, else -> human
+                next_player = AI if gained else HUMAN
+                val, _ = self.minimax(tuple(e2), tuple(b2), next_player)
+                if val > best_val:
+                    best_val = val
+                    best_move = m
+            return best_val, best_move
+        else:
+            # HUMAN turn: minimizing AI score
+            best_val = 999
+            best_move = None
+            for m in moves:
+                e2 = list(edges)
+                b2 = list(boxes)
+                e2[m] = HUMAN
+                gained = False
+                for bi, (t, b, l, r) in enumerate(BOXES):
+                    if e2[t] and e2[b] and e2[l] and e2[r] and b2[bi] == 0:
+                        b2[bi] = HUMAN
+                        gained = True
+                next_player = HUMAN if gained else AI
+                val, _ = self.minimax(tuple(e2), tuple(b2), next_player)
+                if val < best_val:
+                    best_val = val
+                    best_move = m
+            return best_val, best_move
+
 def main():
     root = tk.Tk()
     game = DotsAndBoxes(root)

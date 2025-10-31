@@ -12,6 +12,11 @@
 - functools (lru_cache) → untuk caching hasil fungsi minimax
 - threading → untuk menjalankan proses AI di background agar GUI tetap responsif
 
+# Cara mengunduh aplikasi kami
+- Klik tombol hijau "<> Code"
+- Klik "download ZIP"
+- Unzip zip file yang telah didownload.
+
 # Cara untuk menjalankan aplikasi:
 - Buka aplikasi Microsoft Visual Studio Code
 - Klik "File" yang ada di layar bagian kiri atas disamping logo visual studio code.

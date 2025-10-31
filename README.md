@@ -1,7 +1,7 @@
 # Persyaratan untuk menjalankan Dot & Boxes kami:
 - Python (minimal versi 3.14)
 - Microsoft Visual Studio Code
-- Komputer/laptop atau virtual 
+- Komputer/laptop atau Virtual Machine
 
 # Cara untuk menjalankan aplikasi:
 - Buka aplikasi Microsoft Visual Studio Code

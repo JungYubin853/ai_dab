@@ -38,4 +38,4 @@ Pemain(anda) = hijau, AI = merah.
 
 ## Visual Studio Code
 - buka website https://code.visualstudio.com/Download
-- Klik tombol biru download sesuai gambaran diatas dan tertulis tipe OS dibawah
+- Klik tombol biru download sesuai OS anda.

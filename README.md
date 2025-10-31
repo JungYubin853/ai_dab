@@ -13,6 +13,7 @@
 - threading → untuk menjalankan proses AI di background agar GUI tetap responsif
 
 # Cara mengunduh aplikasi kami
+- Buka website https://github.com/JungYubin853/ai_dab
 - Klik tombol hijau "<> Code"
 - Klik "download ZIP"
 - Unzip zip file yang telah didownload.

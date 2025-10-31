@@ -6,7 +6,7 @@
 # Cara untuk menjalankan aplikasi:
 - Buka aplikasi Microsoft Visual Studio Code
 - Klik "File" yang ada di layar bagian kiri atas disamping logo visual studio code.
-- lalu klik "Open File..." dan cari lokasi file kami "yubin_dab_prototype.py"
+- lalu klik "Open File..." dan cari lokasi file kami "dab_prototype.py"
 - Setelah load, klik tombol play ("▶" segitiga menunjuk ke kanan) pada layar bagian kanan atas. Mohon dipencet sekali saja supaya tidak ada antrian pada aplikasi kami.
 - Setelak klik, Tunggu sampai tertampil sebuah pop up frame dengan judul "Dots and Boxes" dan tombol "Easy (3x3)" "Hard (4x4)" dll. Jika tidak muncul, bisa klik "View" (di layar bagian kiri atas) lalu klik "Terminal" dan lihat ke layar bagian bawah.
 

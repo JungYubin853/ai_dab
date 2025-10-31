@@ -1,8 +1,11 @@
 # Persyaratan untuk menjalankan Dot & Boxes kami:
 - Python (minimal versi 3.14)
 - Microsoft Visual Studio Code (minimal versi 1.105.1)
-	- Code Runner (tambahan di Visual Studio Code)
+	- Code Runner (tambahan dalam Visual Studio Code)
 - Komputer/laptop atau Virtual Machine
+
+# IDE yang digunakan
+- Microsoft Visual Studio Code (minimal versi 1.105.1)
 
 # Library yang digunakan dalam aplikasi
 - tkinter → untuk tampilan GUI

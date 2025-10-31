@@ -1,6 +1,7 @@
 # Persyaratan untuk menjalankan Dot & Boxes kami:
 - Python (minimal versi 3.14)
 - Microsoft Visual Studio Code (minimal versi 1.105.1)
+	- Code Runner (tambahan di Visual Studio Code)
 - Komputer/laptop atau Virtual Machine
 
 # Cara untuk menjalankan aplikasi:
@@ -35,7 +36,19 @@ Pemain(anda) = hijau, AI = merah.
 	- Jika Windows, ada yang tertulis "Windows installer (64-bit)" dan lain-lain.
 	- Jika macOS, tertulis "macOS 64-bit universal2 installer"
 	- Jika Linux, tertulis "Gzipped source tarball" dan ada yang "XZ compressed source tarball"
+ - Jalankan file yang telah di download
 
 ## Visual Studio Code
-- buka website https://code.visualstudio.com/Download
+- buka website https://code.visualstudio.com/Download,
 - Klik tombol biru download sesuai gambaran diatas dan tertulis tipe OS dibawah
+- Jalankan file yang telah di download
+
+## Code Runner
+- Buka Visual Studio Code,
+- Cari logo bergambar seperti gerigi untuk opsi pengaturan yang terletak di layar paling kiri bawah dari Visual Studio Code,
+- Klik pilihan menu "Extensions",
+- Klik search bar bertulis "Search Extensions in Marketplace" di bagian atas kiri sebelah kanan panel,
+- Ketik "code runner",
+- Pilih Extensions bergambar ".run" berwarna orange bernama Code Runner,
+- Klik tombol biru install, tunggu sampai proses install selesai,
+- Jika sudah terinstall, maka muncul tombol biru bertulis "Disable" dan "Uninstall"

@@ -4,6 +4,11 @@
 	- Code Runner (tambahan di Visual Studio Code)
 - Komputer/laptop atau Virtual Machine
 
+# Library yang digunakan
+- tkinter → untuk tampilan GUI
+- functools (lru_cache) → untuk caching hasil fungsi minimax
+- threading → untuk menjalankan proses AI di background agar GUI tetap responsif
+
 # Cara untuk menjalankan aplikasi:
 - Buka aplikasi Microsoft Visual Studio Code
 - Klik "File" yang ada di layar bagian kiri atas disamping logo visual studio code.

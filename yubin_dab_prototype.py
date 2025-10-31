@@ -2,17 +2,15 @@ import tkinter as tk
 from functools import lru_cache
 import threading
 
-# ----- constants -----
+# Variabel global yang digunakan
 HUMAN, AI = 1, 2
 EDGE_EMPTY = "gray"
 HUMAN_COLOR = "green"
 AI_COLOR = "red"
 
-# these will be overwritten by configure_grid()
-GRID_SIZE = 4
+# Variabel global yang digunakan untuk menyimpan nilai awal dari struktur petak/papan
+GRID_SIZE = 3
 NUM_H_EDGES = NUM_V_EDGES = TOTAL_EDGES = 0
-BOXES = []   # list of (top, bottom, left, right) edge-index tuples
-
 
 def configure_grid(size: int):
     """
@@ -21,11 +19,11 @@ def configure_grid(size: int):
     """
     global GRID_SIZE, NUM_H_EDGES, NUM_V_EDGES, TOTAL_EDGES, BOXES
     GRID_SIZE = size
-    NUM_H_EDGES = GRID_SIZE * (GRID_SIZE - 1)              # rows of horizontal edges
-    NUM_V_EDGES = (GRID_SIZE - 1) * GRID_SIZE              # columns of vertical edges
+    NUM_H_EDGES = GRID_SIZE * (GRID_SIZE - 1)              
+    NUM_V_EDGES = (GRID_SIZE - 1) * GRID_SIZE              
     TOTAL_EDGES = NUM_H_EDGES + NUM_V_EDGES
 
-    # build box -> 4 edges mapping once
+    # Membuat default atau semacam container untuk menggabungkan edges dengan dots sehingga membentuk kotak
     BOXES = []
     for r in range(GRID_SIZE - 1):
         for c in range(GRID_SIZE - 1):
@@ -36,7 +34,7 @@ def configure_grid(size: int):
             BOXES.append((top, bottom, left, right))
 
 
-# initialize with default size
+# Inisialisasi bentuk grid awal
 configure_grid(GRID_SIZE)
 
 
@@ -46,7 +44,7 @@ class DotsAndBoxes:
         self.on_back = on_back
         self.root.title(f"Dots and Boxes {GRID_SIZE}x{GRID_SIZE} (Human vs AI)")
 
-        # UI
+        # Tampilan GUI atau dots and boxes nya
         self.canvas = tk.Canvas(root, width=500, height=500, bg="white")
         self.canvas.pack()
         self.info = tk.Label(root, text="Your turn (Green)")
@@ -56,12 +54,12 @@ class DotsAndBoxes:
         tk.Button(self.controls, text="New Game", command=self.reset_game).pack(side=tk.LEFT, padx=6)
         tk.Button(self.controls, text="Back to Menu", command=self._on_back).pack(side=tk.LEFT, padx=6)
 
-        # display settings
-        self.spacing = 120
+        # Ukuran atau tampilan spasi pada GUI
+        self.spacing = 130
         self.margin = 60
 
-        # game state
-        self.edge_state = [0] * TOTAL_EDGES      # 0 empty, 1 human, 2 ai
+        # Status awal game atau initial state
+        self.edge_state = [0] * TOTAL_EDGES
         self.box_owner = [0] * ((GRID_SIZE - 1) * (GRID_SIZE - 1))
         self.current_player = HUMAN
 
@@ -69,12 +67,12 @@ class DotsAndBoxes:
         self.draw_board()
         self.canvas.bind("<Button-1>", self.handle_click)
 
-    # ===== drawing =====
+    # ===== Menggambar =====
     def get_edge_coords(self):
         """Returns (horizontal_edges, vertical_edges) lists of line coords."""
         h_edges, v_edges = [], []
 
-        # horizontal edges
+        # Koordinat Garis horizontal
         for r in range(GRID_SIZE):
             y = self.margin + r * self.spacing
             for c in range(GRID_SIZE - 1):
@@ -82,7 +80,7 @@ class DotsAndBoxes:
                 x2 = x1 + self.spacing
                 h_edges.append((x1, y, x2, y))
 
-        # vertical edges
+        # Koordinat Garis vertikal
         for r in range(GRID_SIZE - 1):
             for c in range(GRID_SIZE):
                 x = self.margin + c * self.spacing
@@ -96,7 +94,7 @@ class DotsAndBoxes:
         self.canvas.delete("all")
         h_edges, v_edges = self.get_edge_coords()
 
-        # draw boxes
+        # Menggambar kotak atau boxes
         for i, owner in enumerate(self.box_owner):
             br, bc = divmod(i, GRID_SIZE - 1)
             x = self.margin + bc * self.spacing
@@ -112,7 +110,7 @@ class DotsAndBoxes:
                 fill=color, outline=color
             )
 
-        # draw edges
+        # Menggambar garis atau edges
         for i, (x1, y1, x2, y2) in enumerate(h_edges):
             owner = self.edge_state[i]
             color = EDGE_EMPTY if owner == 0 else (HUMAN_COLOR if owner == HUMAN else AI_COLOR)
@@ -124,7 +122,7 @@ class DotsAndBoxes:
             color = EDGE_EMPTY if owner == 0 else (HUMAN_COLOR if owner == HUMAN else AI_COLOR)
             self.canvas.create_line(x1, y1, x2, y2, fill=color, width=5)
 
-        # draw dots
+        # Menggambar titik atau dots
         for r in range(GRID_SIZE):
             for c in range(GRID_SIZE):
                 x = self.margin + c * self.spacing
@@ -135,12 +133,12 @@ class DotsAndBoxes:
         """Returns edge index near given point or None."""
         h_edges, v_edges = self.get_edge_coords()
 
-        # check horizontals
+        # Mengecek input user pada garis secara horizontal
         for i, (x1, y1, x2, y2) in enumerate(h_edges):
             if abs(y - y1) <= 10 and x1 - 10 <= x <= x2 + 10:
                 return i
 
-        # check verticals
+        # Mengecek input user pada garis secara vertikal
         for j, (x1, y1, x2, y2) in enumerate(v_edges):
             idx = NUM_H_EDGES + j
             if abs(x - x1) <= 10 and y1 - 10 <= y <= y2 + 10:

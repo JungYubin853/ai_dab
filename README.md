@@ -2,20 +2,19 @@
 - Python (minimal versi 3.14)
 - Microsoft Visual Studio Code
 - Komputer/laptop atau Virtual Machine
-
+--
 # Cara untuk menjalankan aplikasi:
 - Buka aplikasi Microsoft Visual Studio Code
 - Klik "File" yang ada di layar bagian kiri atas disamping logo visual studio code.
 - lalu klik "Open File..." dan cari lokasi file kami "dab_prototype.py"
 - Setelah load, klik tombol play ("▶" segitiga menunjuk ke kanan) pada layar bagian kanan atas. Mohon dipencet sekali saja supaya tidak ada antrian pada aplikasi kami.
-- Setelak klik, Tunggu sampai tertampil sebuah pop up frame dengan judul "Dots and Boxes" dan tombol "Easy (3x3)" "Hard (4x4)" dll. Jika tidak muncul, bisa klik "View" (di layar bagian kiri atas) lalu klik "Terminal" dan lihat ke layar bagian bawah.
-
-
+- Setelak klik, Tunggu sampai tertampil sebuah pop up frame dengan judul "Dots and Boxes" dan tombol "Easy (3x3)" "Hard (4x4)" dll.
+--
 # Cara bermain Dot & Boxes kami:
 ## Basis
 - Klik tombol "Easy (3x3)" atau "Hard (4x4)" untuk bermain.
-	Easy (3x3) = Game Dot & Boxes dengan 4 kotak (2x2 kotak)
-	Hard (4x4) = Game Dot & Boxes dengan 9 kotak (3x3 kotak)
+	- Easy (3x3) = Game Dot & Boxes dengan 4 kotak (2x2 kotak)
+	- Hard (4x4) = Game Dot & Boxes dengan 9 kotak (3x3 kotak)
 - Pemain(anda) selalu memulai giliran pertama sebelum AI.
 Pemain(anda) = hijau, AI = merah.
 - Klik pada garis di antara dua titik untuk menggambarkan garis

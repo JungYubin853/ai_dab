@@ -4,7 +4,7 @@
 	- Code Runner (tambahan di Visual Studio Code)
 - Komputer/laptop atau Virtual Machine
 
-# Library yang digunakan
+# Library yang digunakan dalam aplikasi
 - tkinter → untuk tampilan GUI
 - functools (lru_cache) → untuk caching hasil fungsi minimax
 - threading → untuk menjalankan proses AI di background agar GUI tetap responsif
